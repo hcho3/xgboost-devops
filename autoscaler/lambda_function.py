@@ -42,8 +42,10 @@ def get_jenkins_handle():
 
 def lambda_handler(event, context):
     handle = get_jenkins_handle()
-    logger.info('Jenkins version %s', handle.version)
+    queue = handle.get_queue()
+    keys = queue.keys()
+    logger.info('Jenkins job queue: %s', keys)
     return {
         'statusCode': 200,
-        'body': f'Jenkins version {handle.version}'
+        'body': f'Jenkins job queue: {keys}'
     }
