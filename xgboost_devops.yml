@@ -1,0 +1,11 @@
+name: xgboost_devops
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - pip
+  - jenkinsapi
+  - requests
+  - boto3
+  - awscli
