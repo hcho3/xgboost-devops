@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import tarfile
 import collections
+import glob
 
 import requests
 import boto3
@@ -46,7 +47,9 @@ with tempfile.TemporaryDirectory() as tempdir:
             dest = os.path.join('codepkg', d)
             shutil.move(src, dest)
 
-shutil.copy('lambda_function.py', 'codepkg')
+for p in glob.glob('*.py'):
+    print(f'Packaging {p}')
+    shutil.copy(p, 'codepkg')
 shutil.make_archive('codepkg', format='zip', root_dir='codepkg', base_dir='.')
 
 shutil.rmtree('codepkg')
