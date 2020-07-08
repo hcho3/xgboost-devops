@@ -11,11 +11,11 @@ logger.setLevel(logging.DEBUG)
 
 # Queue reasons being output by Jenkins.
 RE_NO_AVAILABLE_WORKER = [
-    r'(There are no nodes with the label ‘(?P<label>.*)’)',
-    r'(All nodes of label ‘(?P<label>.*)’ are offline)',
-    r'(doesn’t have label ‘(?P<label>.*)’)',
-    r'(Waiting for next available executor on ‘(?P<label>.*)’)',
-    r'(‘(?P<label>.*)’ is offline)',
+    r'(There are no nodes with the label ‘(?P<label>.*?)’)',
+    r'(All nodes of label ‘(?P<label>.*?)’ are offline)',
+    r'(doesn’t have label ‘(?P<label>.*?)’)',
+    r'(Waiting for next available executor on ‘(?P<label>.*?)’)',
+    r'(‘(?P<label>.*?)’ is offline)',
 ]
 RE_NO_AVAILABLE_WORKERS = r'(^Waiting for next available executor$)'
 

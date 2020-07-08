@@ -19,7 +19,7 @@ def lambda_handler(event: Any, context: Any) -> Dict[str, Union[int, str]]:
     return {
         'statusCode': 200,
         'body': {
-            'Queued jobs label': [list(x) for x in job_labels],
-            'Jenkins workers label': [list(x) for x in worker_labels]
+            'Queued jobs label': [(list(x) if x else None) for x in job_labels],
+            'Jenkins workers label': [(list(x) if x else None) for x in worker_labels]
         }
     }
