@@ -19,7 +19,7 @@ jobs:
         python -m pip install boto3 requests
     - name: Deploy code package to AWS Lambda
       run: |
-        cd autoscaler
+        cd cost_watcher
         python deploy.py
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

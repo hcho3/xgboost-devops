@@ -57,6 +57,6 @@ shutil.rmtree('codepkg')
 client = boto3.client('lambda', region_name='us-west-2')
 with open('codepkg.zip', 'rb') as f:
     r = client.update_function_code(
-        FunctionName='XGBoostCIAutoscaler',
+        FunctionName='XGBoostCICostWatcher',
         ZipFile=f.read(),
         Publish=False)

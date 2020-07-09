@@ -1,9 +1,0 @@
-The Autoscaler lambda function contains modified code from the MXNet CI code repository
-(https://github.com/apache/incubator-mxnet-ci), which is releasted under the Apache 2.0 license.
-The MXNet CI code repository contains the following attribution notices:
-
-    Apache MXNET (incubating)
-    Copyright 2017 and onwards The Apache Software Foundation
-
-    This product includes software developed at
-    The Apache Software Foundation (http://www.apache.org/).
