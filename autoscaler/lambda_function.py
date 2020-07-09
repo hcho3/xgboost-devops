@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Union
 
 from jenkins_connector import jenkins_handle
-from node_label_extractor import label_from_queued_job, managed_worker_label
+from label_extractor import label_from_queued_job, managed_worker_label
 
 # Set up logging
 logger = logging.getLogger(__name__)
