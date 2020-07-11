@@ -6,6 +6,7 @@ import math
 from typing import Any, Dict, Tuple, Union
 
 import boto3
+from metadata import daily_budget
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
@@ -134,3 +135,14 @@ def lambda_handler(event: Any, context: Any):
                 ec2_id, num_second, record['start'].isoformat(), record['end'].isoformat(), cost)
         today_cost += cost
     logger.info('Cost = %.2f USD', today_cost)
+    threshold = daily_budget()
+    if today_cost > threshold:
+        logger.info('Cost exceeds daily budget (%.2f USD)!', threshold)
+        return {
+            'approved' : False
+        }
+    else:
+        logger.info('Cost is under daily budget (%.2f USD).', threshold)
+        return {
+            'approved' : True
+        }
