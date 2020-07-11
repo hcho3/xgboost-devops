@@ -1,34 +1,137 @@
 import logging
-from datetime import datetime
-from typing import Any, Dict
+import datetime
+import json
+import re
+import math
+from typing import Any, Dict, Tuple, Union
 
 import boto3
+
+recognized_os_types = ['Linux', 'Windows']
+recognized_instance_types = [
+    'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge'
+]
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def get_this_month_ec2_spend() -> Dict[str, str]:
-    """Query the money (cost) spent on EC2 this month so far"""
-    client = boto3.client('ce', region_name='us-west-2')
-    today = datetime.today()
-    date_start = today.replace(day=1).strftime('%Y-%m-%d')
-    date_end = today.replace(month=today.month + 1, day=1).strftime('%Y-%m-%d')
-    logger.debug('Date queried: [%s, %s)', date_start, date_end)
-    r = client.get_cost_and_usage(
-        TimePeriod={'Start': date_start, 'End': date_end},
-        Granularity='MONTHLY',
-        Filter={'And': [
-            {'Dimensions': {'Key': 'RECORD_TYPE', 'Values': ['Usage']}},
-            {'Dimensions': {'Key': 'SERVICE', 'Values': ['Amazon Elastic Compute Cloud - Compute']}}
-        ]},
-        Metrics=['AmortizedCost']
+def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
+    client = boto3.client('cloudtrail', region_name='us-west-2')
+
+    today = datetime.datetime.now(datetime.timezone.utc)
+
+    paginator = client.get_paginator('lookup_events')
+    today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + datetime.timedelta(days=1)
+
+    ec2_run_record = {}
+
+    page_iter = paginator.paginate(
+        LookupAttributes=[
+            {'AttributeKey': 'EventName', 'AttributeValue': 'TerminateInstances'}
+        ],
+        StartTime=today_start,
+        EndTime=today_end
     )
-    cost = r['ResultsByTime'][0]['Total']['AmortizedCost']
-    cost['Amount'] = float(cost['Amount'])
-    return cost
+    for page in page_iter:
+        for event in page['Events']:
+            assert event['EventName'] == 'TerminateInstances'
+            event_time = event['EventTime']
+            event_detail = json.loads(event['CloudTrailEvent'])
+            for ec2 in event_detail['responseElements']['instancesSet']['items']:
+                ec2_id = ec2['instanceId']
+                ec2_run_record[ec2_id] = {'end': event_time}
+
+    page_iter = paginator.paginate(
+        LookupAttributes=[
+            {'AttributeKey': 'EventName', 'AttributeValue': 'RunInstances'}
+        ],
+        StartTime=today_start - datetime.timedelta(days=1),
+        EndTime=today_end
+    )
+    for page in page_iter:
+        for event in page['Events']:
+            assert event['EventName'] == 'RunInstances'
+            event_time = event['EventTime']
+            event_detail = json.loads(event['CloudTrailEvent'])
+            for ec2 in event_detail['responseElements']['instancesSet']['items']:
+                ec2_id = ec2['instanceId']
+                if ec2_id not in ec2_run_record:
+                    continue
+                ec2_type = ec2['instanceType']
+                ec2_tags = {x['key']: x['value'] for x in ec2['tagSet']['items']}
+                worker_type = ec2_tags['jenkins_slave_type']
+                if ec2_tags['jenkins_slave_type'].startswith('demand_Linux'):
+                    ec2_os = 'Linux'
+                elif ec2_tags['jenkins_slave_type'].startswith('demand_Windows'):
+                    ec2_os = 'Windows'
+                else:
+                    raise AssertionError('Invalid Jenkins worker type')
+                ec2_run_record[ec2_id]['start'] = event_time
+                ec2_run_record[ec2_id]['type'] = ec2_type
+                ec2_run_record[ec2_id]['os'] = ec2_os
+    return ec2_run_record
+
+def get_ec2_pricing() -> Dict[Tuple[str, str], float]:
+    client = boto3.client('pricing', region_name='us-east-1')
+
+    region_name = 'US West (Oregon)'
+    cost_table = {}
+
+    for instance_type in recognized_instance_types:
+        r = client.get_products(
+            ServiceCode='AmazonEC2',
+            Filters=[
+                {'Type': 'TERM_MATCH', 'Field': 'location', 'Value': region_name},
+                {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'},
+                {'Type': 'TERM_MATCH', 'Field': 'capacitystatus', 'Value': 'Used'},
+                {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': 'NA'},
+                {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': instance_type}
+            ],
+            FormatVersion='aws_v1'
+        )
+        for e in r['PriceList']:
+            obj = json.loads(e)
+            product_record = obj['product']
+            if product_record['productFamily'] != 'Compute Instance':
+                continue
+            product_attrs = product_record['attributes']
+            os_type = product_attrs['operatingSystem']
+            if os_type not in recognized_os_types:
+                continue
+            instance_type_ = product_attrs['instanceType']
+            assert instance_type_ == instance_type
+            assert product_attrs['location'] == region_name
+            assert product_attrs['tenancy'] == 'Shared'
+            assert product_attrs['capacitystatus'] == 'Used'
+            assert product_attrs['preInstalledSw'] == 'NA'
+            assert re.match(r'^RunInstances(?::[0-9g]{4}){0,1}$', product_attrs['operation'])
+            price_record = obj['terms']['OnDemand']
+            id1 = list(price_record)[0]
+            id2 = list(price_record[id1]['priceDimensions'])[0]
+            price_record = price_record[id1]['priceDimensions'][id2]
+            assert 'USD' in price_record['pricePerUnit']
+            assert price_record['unit'] == 'Hrs'
+            cost_table[(os_type, instance_type)] = float(price_record['pricePerUnit']['USD'])
+    return cost_table
 
 def lambda_handler(event: Any, context: Any):
     """Hanlder to be called by AWS Lambda"""
-    cost = get_this_month_ec2_spend()
-    logger.info('This month, we spent %.2f %s on EC2 so far.', cost['Amount'], cost['Unit'])
+    ec2_run_record = get_today_ec2_usage_record()
+    cost_table = get_ec2_pricing()
+    logger.debug('cost_table: %s', cost_table)
+    today_cost = 0
+    for ec2_id, record in ec2_run_record.items():
+        duration = record['end'] - record['start']
+        num_second = math.ceil(duration.total_seconds())
+        if record['os'] == 'Linux':
+            cost = num_second * cost_table[('Linux', record['type'])] / 3600
+        else:
+            assert record['os'] == 'Windows'
+            num_hour = math.ceil(num_second / 3600)
+            cost = num_hour * cost_table[('Windows', record['type'])]
+        logger.debug('%s %s (%s), ran %d sec (%s~%s), cost %.2f USD', record['type'], record['os'],
+                ec2_id, num_second, record['start'].isoformat(), record['end'].isoformat(), cost)
+        today_cost += cost
+    logger.info('Cost = %.2f USD', today_cost)
