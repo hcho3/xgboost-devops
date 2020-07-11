@@ -126,7 +126,7 @@ def lambda_handler(event: Any, context: Any):
         duration = record['end'] - record['start']
         num_second = math.ceil(duration.total_seconds())
         if record['os'] == 'Linux':
-            cost = num_second * cost_table[('Linux', record['type'])] / 3600
+            cost = max(num_second, 60) * cost_table[('Linux', record['type'])] / 3600
         else:
             assert record['os'] == 'Windows'
             num_hour = math.ceil(num_second / 3600)
