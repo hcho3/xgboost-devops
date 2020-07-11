@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Dict
 
 import boto3
-from jenkins_connector import jenkins_handle
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -31,7 +30,5 @@ def get_this_month_ec2_spend() -> Dict[str, str]:
 
 def lambda_handler(event: Any, context: Any):
     """Hanlder to be called by AWS Lambda"""
-    handle = jenkins_handle()
-    logger.info('Jenkins version: %s', handle.version)
     cost = get_this_month_ec2_spend()
     logger.info('This month, we spent %.2f %s on EC2 so far.', cost['Amount'], cost['Unit'])
