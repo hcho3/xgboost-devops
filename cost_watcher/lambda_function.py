@@ -9,7 +9,7 @@ import boto3
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
-    'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge'
+    'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge', 'c5.large'
 ]
 
 # Set up logging
@@ -18,6 +18,7 @@ logger.setLevel(logging.DEBUG)
 
 def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
     client = boto3.client('cloudtrail', region_name='us-west-2')
+    ec2_client = boto3.client('ec2', region_name='us-west-2')
 
     today = datetime.datetime.now(datetime.timezone.utc)
 
@@ -60,14 +61,12 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
                 if ec2_id not in ec2_run_record:
                     continue
                 ec2_type = ec2['instanceType']
-                ec2_tags = {x['key']: x['value'] for x in ec2['tagSet']['items']}
-                worker_type = ec2_tags['jenkins_slave_type']
-                if ec2_tags['jenkins_slave_type'].startswith('demand_Linux'):
+                r = ec2_client.describe_images(ImageIds=[ec2['imageId']])
+                assert len(r['Images']) == 1
+                ec2_os = r['Images'][0]['PlatformDetails']
+                assert ec2_os in ['Linux/UNIX', 'Windows']
+                if ec2_os == 'Linux/UNIX':
                     ec2_os = 'Linux'
-                elif ec2_tags['jenkins_slave_type'].startswith('demand_Windows'):
-                    ec2_os = 'Windows'
-                else:
-                    raise AssertionError('Invalid Jenkins worker type')
                 ec2_run_record[ec2_id]['start'] = event_time
                 ec2_run_record[ec2_id]['type'] = ec2_type
                 ec2_run_record[ec2_id]['os'] = ec2_os
