@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
-    client = boto3.client('cloudtrail', region_name='us-west-2')
+    ct_client = boto3.client('cloudtrail', region_name='us-west-2')
     ec2_client = boto3.client('ec2', region_name='us-west-2')
 
     today = datetime.datetime.now(datetime.timezone.utc)
 
-    paginator = client.get_paginator('lookup_events')
+    paginator = ct_client.get_paginator('lookup_events')
     today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + datetime.timedelta(days=1)
 
@@ -144,6 +144,20 @@ def lambda_handler(event: Any, context: Any):
         today_cost += cost
     logger.info('Cost = %.2f USD', today_cost)
     threshold = daily_budget()
+
+    cw_client = boto3.client('cloudwatch', region_name='us-west-2')
+    cw_client.put_metric_data(
+        MetricData=[
+            {
+                'MetricName': 'TodayEC2SpendingUSD',
+                'Dimensions': [],
+                'Unit': 'None',
+                'Value': today_cost
+            }
+        ],
+        Namespace='XGBoostCICostWatcher'
+    )
+
     if today_cost > threshold:
         reason = (f"Today's spending ({today_cost:.2f} USD) exceeded the budget " +
                   f"({threshold:.2f} USD) allocated for today!")
