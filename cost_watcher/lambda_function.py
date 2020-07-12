@@ -123,6 +123,14 @@ def lambda_handler(event: Any, context: Any):
     logger.debug('cost_table: %s', cost_table)
     today_cost = 0
     for ec2_id, record in ec2_run_record.items():
+        assert 'end' in record
+        if 'start' not in record:
+            # There is up to 15 minute delay between API invocation and when CloudTrail records it
+            # In a rare case, CloudTrail could have a record for terminating an instance but not
+            # yet for starting it. Ignore this record for the purpose of estimating the daily cost.
+            logger.info('CloudTrail has record for terminating instance %s (%s) but not for ' +
+                        'starting it. Ignoring it for now.', ec2_id, record['end'].isoformat())
+            continue
         duration = record['end'] - record['start']
         num_second = math.ceil(duration.total_seconds())
         if record['os'] == 'Linux':
@@ -137,12 +145,18 @@ def lambda_handler(event: Any, context: Any):
     logger.info('Cost = %.2f USD', today_cost)
     threshold = daily_budget()
     if today_cost > threshold:
-        logger.info('Cost exceeds daily budget (%.2f USD)!', threshold)
+        reason = (f"Today's spending ({today_cost:.2f} USD) exceeded the budget " +
+                  f"({threshold:.2f} USD) allocated for today!")
+        logger.info(reason)
         return {
-            'approved' : False
+            'approved' : False,
+            'reason': reason
         }
     else:
-        logger.info('Cost is under daily budget (%.2f USD).', threshold)
+        reason = (f"Today's spending ({today_cost:.2f} USD) is within the budget " +
+                  f"({threshold:.2f} USD) allocated for today.")
+        logger.info(reason)
         return {
-            'approved' : True
+            'approved' : True,
+            'reason': reason
         }
