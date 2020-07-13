@@ -10,7 +10,8 @@ from metadata import daily_budget
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
-    'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge', 'c5.large'
+    'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge', 'c5.large',
+    't3a.large'
 ]
 
 # Set up logging
@@ -93,7 +94,7 @@ def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, s
         duration = current_time - launch_time
         tags = {x['Key'] : x['Value'] for x in instance.tags}
         # Exclude the Jenkins manager instance
-        if 'Name' in tags and tags['Name'] == 'Jenkins manager':
+        if 'Name' in tags and tags['Name'] in ['Jenkins manager', 'Jenkins Job Initializer']:
             continue
         ec2_run_record[instance.instance_id] = {
             'start': launch_time,
