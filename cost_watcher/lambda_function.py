@@ -17,14 +17,20 @@ recognized_instance_types = [
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+def get_os_of_ami(image_id: str) -> str:
+    image = boto3.resource('ec2', region_name='us-west-2').Image(image_id)
+    assert image.platform_details in ['Linux/UNIX', 'Windows']
+    if image.platform_details == 'Linux/UNIX':
+        return 'Linux'
+    return image.platform_details
+
 def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
     ct_client = boto3.client('cloudtrail', region_name='us-west-2')
-    ec2_client = boto3.client('ec2', region_name='us-west-2')
 
-    today = datetime.datetime.now(datetime.timezone.utc)
+    current_time = datetime.datetime.now(datetime.timezone.utc)
 
     paginator = ct_client.get_paginator('lookup_events')
-    today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + datetime.timedelta(days=1)
 
     ec2_run_record = {}
@@ -61,16 +67,37 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
                 ec2_id = ec2['instanceId']
                 if ec2_id not in ec2_run_record:
                     continue
-                ec2_type = ec2['instanceType']
-                r = ec2_client.describe_images(ImageIds=[ec2['imageId']])
-                assert len(r['Images']) == 1
-                ec2_os = r['Images'][0]['PlatformDetails']
-                assert ec2_os in ['Linux/UNIX', 'Windows']
-                if ec2_os == 'Linux/UNIX':
-                    ec2_os = 'Linux'
                 ec2_run_record[ec2_id]['start'] = event_time
-                ec2_run_record[ec2_id]['type'] = ec2_type
-                ec2_run_record[ec2_id]['os'] = ec2_os
+                ec2_run_record[ec2_id]['type'] = ec2['instanceType']
+                ec2_run_record[ec2_id]['os'] = get_os_of_ami(ec2['imageId'])
+    return ec2_run_record
+
+def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
+    ec2 = boto3.resource('ec2', region_name='us-west-2')
+    ec2_iter = ec2.instances.filter(
+        Filters=[
+            {'Name': 'instance-state-name',
+             'Values': ['pending', 'running', 'shutting-down', 'stopping']}
+        ]
+    )
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    ec2_run_record = {}
+
+    for instance in ec2_iter:
+        launch_time = instance.launch_time.astimezone(tz=datetime.timezone.utc)
+        duration = current_time - launch_time
+        tags = {x['Key'] : x['Value'] for x in instance.tags}
+        # Exclude the Jenkins manager instance
+        if 'Name' in tags and tags['Name'] == 'Jenkins manager':
+            continue
+        ec2_run_record[instance.instance_id] = {
+            'start': launch_time,
+            'end': current_time,
+            'type': instance.instance_type,
+            'os': get_os_of_ami(instance.image_id)
+        }
     return ec2_run_record
 
 def get_ec2_pricing() -> Dict[Tuple[str, str], float]:
@@ -118,11 +145,22 @@ def get_ec2_pricing() -> Dict[Tuple[str, str], float]:
 
 def lambda_handler(event: Any, context: Any):
     """Hanlder to be called by AWS Lambda"""
-    ec2_run_record = get_today_ec2_usage_record()
     cost_table = get_ec2_pricing()
     logger.debug('cost_table: %s', cost_table)
     today_cost = 0
-    for ec2_id, record in ec2_run_record.items():
+
+    def estimate_cost(record: Dict[str, Union[datetime.datetime, str]]) -> float:
+        duration = record['end'] - record['start']
+        num_second = math.ceil(duration.total_seconds())
+        if record['os'] == 'Linux':
+            # Linux instances use per-second billing, with a minimum commitment of 60 seconds
+            return max(num_second, 60) * cost_table[('Linux', record['type'])] / 3600
+        assert record['os'] == 'Windows'
+        # Windows instances use per-hour billing, with the usage time rounded up to the next hour.
+        num_hour = math.ceil(num_second / 3600)
+        return num_hour * cost_table[('Windows', record['type'])]
+
+    for ec2_id, record in get_today_ec2_usage_record().items():
         assert 'end' in record
         if 'start' not in record:
             # There is up to 15 minute delay between API invocation and when CloudTrail records it
@@ -132,16 +170,19 @@ def lambda_handler(event: Any, context: Any):
                         'starting it. Ignoring it for now.', ec2_id, record['end'].isoformat())
             continue
         duration = record['end'] - record['start']
-        num_second = math.ceil(duration.total_seconds())
-        if record['os'] == 'Linux':
-            cost = max(num_second, 60) * cost_table[('Linux', record['type'])] / 3600
-        else:
-            assert record['os'] == 'Windows'
-            num_hour = math.ceil(num_second / 3600)
-            cost = num_hour * cost_table[('Windows', record['type'])]
+        cost = estimate_cost(record)
         logger.debug('%s %s (%s), ran %d sec (%s~%s), cost %.2f USD', record['type'], record['os'],
-                ec2_id, num_second, record['start'].isoformat(), record['end'].isoformat(), cost)
+                ec2_id, duration.total_seconds(), record['start'].isoformat(),
+                record['end'].isoformat(), cost)
         today_cost += cost
+
+    for ec2_id, record in get_active_ec2_instances().items():
+        duration = record['end'] - record['start']
+        cost = estimate_cost(record)
+        logger.debug('%s %s (%s), ran %d sec (%s~Now), cost %.2f USD', record['type'], record['os'],
+                ec2_id, duration.total_seconds(), record['start'].isoformat(), cost)
+        today_cost += cost
+
     logger.info('Cost = %.2f USD', today_cost)
     threshold = daily_budget()
 
