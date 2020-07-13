@@ -17,12 +17,15 @@ recognized_instance_types = [
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+ec2_resource = boto3.resource('ec2', region_name='us-west-2')
+
 def get_os_of_ami(image_id: str) -> str:
-    image = boto3.resource('ec2', region_name='us-west-2').Image(image_id)
-    assert image.platform_details in ['Linux/UNIX', 'Windows']
-    if image.platform_details == 'Linux/UNIX':
+    image = ec2_resource.Image(image_id)
+    platform_details = image.platform_details
+    assert platform_details in ['Linux/UNIX', 'Windows']
+    if platform_details == 'Linux/UNIX':
         return 'Linux'
-    return image.platform_details
+    return platform_details
 
 def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
     ct_client = boto3.client('cloudtrail', region_name='us-west-2')
