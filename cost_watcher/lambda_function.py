@@ -11,7 +11,7 @@ from metadata import daily_budget
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
     'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge', 'c5.large',
-    't3a.large'
+    't3a.large', 't3a.micro'
 ]
 
 # Set up logging
