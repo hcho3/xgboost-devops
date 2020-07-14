@@ -35,9 +35,26 @@ foreach($data as $datapoint) {
 <html>
 <head>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet"
+href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+<style type="text/css">
+#countdown_timer {
+  font-size: 40pt;
+  font-weight: bold;
+}
+#countdown_desc {
+  font-size: 16pt;
+}
+body {
+  font-family: 'Open Sans', sans-serif;
+}
+</style>
 </head>
 <body>
-<div id='myDiv'></div>
+<div id="graph_canvas"></div>
+<div id="countdown_desc">
+  Time left until the spending limit gets reset: <div id="countdown_timer"></div>
+</div>
 <script type="text/javascript">
 let data = [
   {
@@ -78,7 +95,34 @@ let layout = {
   }
 };
 
-Plotly.newPlot('myDiv', data, layout);
+Plotly.newPlot('graph_canvas', data, layout);
+
+function setMidnight() {
+  // Set the date we're counting down to
+  let midnight = new Date();
+  midnight.setUTCHours(24,0,0,0);
+  return midnight.getTime();
+}
+
+function zeroPad(x) {
+  return ("00" + x).slice(-2);
+}
+
+let countDownDate = setMidnight();
+
+setInterval(function() {
+  let now = new Date().getTime();
+  let distance = countDownDate - now;
+  let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  if (distance <= 0) {
+    countDownDate = setMidnight();
+  }
+  document.getElementById("countdown_timer").innerHTML = (
+    zeroPad(hours) + ":" + zeroPad(minutes) + ":" + zeroPad(seconds));
+}, 1000);
 </script>
 </body>
 </html>
