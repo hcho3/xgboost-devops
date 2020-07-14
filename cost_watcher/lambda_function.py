@@ -208,7 +208,9 @@ def lambda_handler(event: Any, context: Any):
 
     if today_cost > threshold:
         reason = (f"Today's spending ({today_cost:.2f} USD) exceeded the budget " +
-                  f"({threshold:.2f} USD) allocated for today!")
+                  f"({threshold:.2f} USD) allocated for today! The spending limit gets reset " +
+                  f"every midnight UTC. You can monitor the spending at the dashboard " +
+                  "https://xgboost-ci.net/dashboard/.")
         logger.info(reason)
         return {
             'approved' : False,
