@@ -20,7 +20,7 @@ jobs:
     - name: Install Python packages
       run: |
         python -m pip install boto3 awscli
-    - name: Deploy code package to AWS Lambda
+    - name: Deploy Dashboard website to https://xgboost-ci.net
       run: |
         bash deploy_scripts/deploy_dashboard.sh
       env:

@@ -6,7 +6,7 @@ import math
 from typing import Any, Dict, Tuple, Union
 
 import boto3
-from metadata import daily_budget
+import configparser
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 ec2_resource = boto3.resource('ec2', region_name='us-west-2')
+
+config = configparser.ConfigParser()
+config.read('./metadata.ini')
 
 def get_os_of_ami(image_id: str) -> str:
     image = ec2_resource.Image(image_id)
@@ -188,7 +191,7 @@ def lambda_handler(event: Any, context: Any):
         today_cost += cost
 
     logger.info('Cost = %.2f USD', today_cost)
-    threshold = daily_budget()
+    threshold = float(config['DEFAULT']['daily_budget'])
 
     cw_client = boto3.client('cloudwatch', region_name='us-west-2')
     cw_client.put_metric_data(

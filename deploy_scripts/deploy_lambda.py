@@ -10,6 +10,8 @@ def deploy_lambda(lambda_function, code_dir):
     for p in glob.glob(os.path.join(code_dir, '*.py')):
         print(f'Packaging {p}')
         shutil.copy(p, 'codepkg')
+    print(f'Packaging metadata.ini')
+    shutil.copy('metadata.ini', 'codepkg')
     shutil.make_archive('codepkg', format='zip', root_dir='codepkg', base_dir='.')
     shutil.rmtree('codepkg')
     print(f'Deploying to Lambda function {lambda_function}...')

@@ -16,5 +16,5 @@ pubkey=$(cat my_rsa_key.pub)
 python -m awscli ec2-instance-connect send-ssh-public-key --instance-id $manager_id \
   --availability-zone $manager_az --instance-os-user ubuntu --ssh-public-key "$pubkey" \
   --region us-west-2
-rsync -Pav -e "ssh -i ./my_rsa_key -o StrictHostKeyChecking=no" ./dashboard/ \
+rsync -PaLv -e "ssh -i ./my_rsa_key -o StrictHostKeyChecking=no" ./dashboard/ \
   ubuntu@xgboost-ci.net:/var/www/xgboost-ci.net/html/dashboard
