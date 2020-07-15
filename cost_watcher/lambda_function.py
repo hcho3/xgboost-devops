@@ -191,7 +191,7 @@ def lambda_handler(event: Any, context: Any):
         today_cost += cost
 
     logger.info('Cost = %.2f USD', today_cost)
-    threshold = float(config['DEFAULT']['daily_budget'])
+    daily_budget = float(config['DEFAULT']['daily_budget'])
 
     cw_client = boto3.client('cloudwatch', region_name='us-west-2')
     cw_client.put_metric_data(
@@ -201,14 +201,20 @@ def lambda_handler(event: Any, context: Any):
                 'Dimensions': [],
                 'Unit': 'None',
                 'Value': today_cost
+            },
+            {
+                'MetricName': 'DailyBudgetUSD',
+                'Dimensions': [],
+                'Unit': 'None',
+                'Value': daily_budget
             }
         ],
         Namespace='XGBoostCICostWatcher'
     )
 
-    if today_cost > threshold:
+    if today_cost > daily_budget:
         reason = (f"Today's spending ({today_cost:.2f} USD) exceeded the budget " +
-                  f"({threshold:.2f} USD) allocated for today! The spending limit gets reset " +
+                  f"({daily_budget:.2f} USD) allocated for today! The spending limit gets reset " +
                   f"every midnight UTC. You can monitor the spending at the dashboard " +
                   "https://xgboost-ci.net/dashboard/.")
         logger.info(reason)
@@ -218,7 +224,7 @@ def lambda_handler(event: Any, context: Any):
         }
     else:
         reason = (f"Today's spending ({today_cost:.2f} USD) is within the budget " +
-                  f"({threshold:.2f} USD) allocated for today.")
+                  f"({daily_budget:.2f} USD) allocated for today.")
         logger.info(reason)
         return {
             'approved' : True,
