@@ -14,11 +14,15 @@ $result = $client->getMetricStatistics(array(
   'MetricName' => 'TodayEC2SpendingUSD',
   'StartTime'  => strtotime('-48 hours'),
   'EndTime'    => strtotime('now'),
-  'Period'     => 900,
+  'Period'     => 120,
   'Statistics' => array('Maximum')
 ));
 
 $message = '';
+
+function get_date($timestamp) {
+  return explode('T', $timestamp)[0];
+}
 
 $data = $result['Datapoints'];
 usort($data, function($a, $b) {
@@ -27,9 +31,17 @@ usort($data, function($a, $b) {
     }
     return ($a['Timestamp'] < $b['Timestamp']) ? -1 : 1;
 });
+$prefix_max = 0;
+$prev_timestamp = null;
 foreach($data as $datapoint) {
   $timestamp[] = $datapoint['Timestamp'];
-  $expense[] = $datapoint['Maximum'];
+  if (!empty($prev_timestamp) && get_date($prev_timestamp) != get_date($datapoint['Timestamp'])) {
+    $prefix_max = $datapoint['Maximum'];
+  } else {
+    $prefix_max = max($prefix_max, $datapoint['Maximum']);
+  }
+  $prev_timestamp = $datapoint['Timestamp'];
+  $expense[] = $prefix_max;
 }
 ?>
 <html>
