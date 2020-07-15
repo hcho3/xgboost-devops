@@ -129,12 +129,7 @@ let layout = {
       text: 'USD'
     }
   },
-  showlegend: true,
-  legend: {
-    x: 1,
-    xanchor: 'right',
-    y: 1
-  }
+  showlegend: true
 };
 
 Plotly.newPlot('graph_canvas', data, layout);
