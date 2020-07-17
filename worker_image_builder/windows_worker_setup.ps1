@@ -70,70 +70,15 @@ choco install jre8 -PackageParameters "/exclude:32"
 Write-Host '>>> Installing GraphViz...'
 choco install graphviz
 
-# Install Visual Studio Community 2017 (15.6)
-Write-Host '>>> Installing Visual Studio 2017 Community (15.6)...'
-$LocalTempDir = $env:TEMP
-$VSInstaller = 'VSInstaller.exe'
-$webclient.DownloadFile('https://aka.ms/eac464', "$LocalTempDir\$VSInstaller")
-Start-Process -FilePath "$LocalTempDir\$VSInstaller" -Wait -PassThru -ArgumentList `
-    "--add Microsoft.VisualStudio.Workload.ManagedDesktop",
-    "--add Microsoft.VisualStudio.Workload.NetCoreTools",
-    "--add Microsoft.VisualStudio.Workload.NetWeb",
-    "--add Microsoft.VisualStudio.Workload.Node",
-    "--add Microsoft.VisualStudio.Workload.Office",
-    "--add Microsoft.VisualStudio.Component.TypeScript.2.0",
-    "--add Microsoft.VisualStudio.Component.TestTools.WebLoadTest",
-    "--add Component.GitHub.VisualStudio",
-    "--add Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Core",
-    "--add Microsoft.VisualStudio.Component.Static.Analysis.Tools",
-    "--add Microsoft.VisualStudio.Component.VC.CMake.Project",
-    "--add Microsoft.VisualStudio.Component.VC.140",
-    "--add Microsoft.VisualStudio.Component.Windows10SDK.15063.Desktop",
-    "--add Microsoft.VisualStudio.Component.Windows10SDK.15063.UWP",
-    "--add Microsoft.VisualStudio.Component.Windows10SDK.15063.UWP.Native",
-    "--add Microsoft.VisualStudio.ComponentGroup.Windows10SDK.15063",
-    "--wait",
-    "--passive",
-    "--norestart" 
+# Install Visual Studio Community 2017 (15.9)
+Write-Host '>>> Installing Visual Studio 2017 Community (15.9)...'
+choco install visualstudio2017community --version 15.9.23.0 --params "--wait --passive --norestart"
+choco install visualstudio2017-workload-nativedesktop --params `
+    "--wait --passive --norestart --includeOptional"
 
-# Install CUDA 10.0
-Write-Host '>>> Installing CUDA 10.0...'
-$CUDAInstaller = 'CUDAInstaller.exe'
-$webclient.DownloadFile(
-    'https://developer.nvidia.com/compute/cuda/10.0/Prod/network_installers/cuda_10.0.130_windows_network',
-    "$LocalTempDir\$CUDAInstaller")
-Start-Process -FilePath "$LocalTempDir\$CUDAInstaller" -Wait -PassThru -ArgumentList `
-    "-s",
-    "nvcc_10.0",
-    "cuobjdump_10.0",
-    'nvprune_10.0',
-    'cupti_10.0',
-    'gpu_library_advisor_10.0',
-    'memcheck_10.0',
-    'nvdisasm_10.0',
-    'nvprof_10.0',
-    'visual_profiler_10.0',
-    'visual_studio_integration_10.0',
-    'demo_suite_10.0',
-    'documentation_10.0',
-    'cublas_10.0',
-    'cublas_dev_10.0',
-    'cudart_10.0',
-    'cufft_10.0',
-    'cufft_dev_10.0',
-    'curand_10.0',
-    'curand_dev_10.0',
-    'cusolver_10.0',
-    'cusolver_dev_10.0',
-    'cusparse_10.0',
-    'cusparse_dev_10.0',
-    'nvgraph_10.0',
-    'nvgraph_dev_10.0',
-    'npp_10.0',
-    'npp_dev_10.0',
-    'nvrtc_10.0',
-    'nvrtc_dev_10.0',
-    'nvml_dev_10.0'
+# Install CUDA 10.1
+Write-Host '>>> Installing CUDA 10.1...'
+choco install cuda --version 10.1.243
 
 # Install Python packages
 Write-Host '>>> Installing Python packages...'
