@@ -70,6 +70,13 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
             assert event['EventName'] == 'RunInstances'
             event_time = event['EventTime']
             event_detail = json.loads(event['CloudTrailEvent'])
+            if (('responseElements' not in event_detail)
+                    or (not event_detail['responseElements'])
+                    or ('instancesSet' not in event_detail['responseElements'])
+                    or (not event_detail['responseElements']['instancesSet'])):
+                logger.debug('Skipping RunInstances event at %s because it did not succeed.',
+                             event_time)
+                continue
             for ec2 in event_detail['responseElements']['instancesSet']['items']:
                 ec2_id = ec2['instanceId']
                 if ec2_id not in ec2_run_record:
