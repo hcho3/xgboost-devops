@@ -83,4 +83,5 @@ choco install cuda --version 10.1.243
 # Install Python packages
 Write-Host '>>> Installing Python packages...'
 conda activate
-conda install -y numpy scipy matplotlib scikit-learn pandas pytest python-graphviz boto3
+conda install -y numpy scipy matplotlib scikit-learn pandas pytest python-graphviz boto3 awscli `
+    hypothesis jsonschema
