@@ -13,15 +13,36 @@ recognized_instance_types = [
     'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge', 'c5.large',
     't3a.large', 't3a.micro', 'g4dn.2xlarge'
 ]
+no_launch_policy_arn = 'arn:aws:iam::492475357299:policy/EC2AccessNoRunInstances'
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 ec2_resource = boto3.resource('ec2', region_name='us-west-2')
+iam_resource = boto3.resource('iam', region_name='us-west-2')
 
 config = configparser.ConfigParser()
 config.read('./metadata.ini')
+
+def turn_off_ec2_provision():
+    """Prevent the Jenkins manager from launching new EC2 worker instances. This function is
+    idempotent, i.e. it can be called multiple time without adverse effects."""
+    policy = iam_resource.Policy(no_launch_policy_arn)
+    policy.attach_role(RoleName='XGBoost-CI-Master')
+    logger.info('Now the Jenkins manager cannot launch new EC2 worker instances')
+    assert policy.attachment_count == 1
+
+def turn_on_ec2_provision():
+    """Allow the Jenkins manager to launch new EC2 worker instances. This function is idempotent,
+    i.e. it can be called multiple times without adverse effects."""
+    policy = iam_resource.Policy(no_launch_policy_arn)
+    try:
+        policy.detach_role(RoleName='XGBoost-CI-Master')
+    except iam_resource.meta.client.exceptions.NoSuchEntityException as e:
+        logger.debug('The Jenkins manager already can launch new EC2 instances')
+    logger.info('Now the Jenkins manager can launch new EC2 worker instances')
+    assert policy.attachment_count == 0
 
 def get_os_of_ami(image_id: str) -> str:
     image = ec2_resource.Image(image_id)
@@ -225,6 +246,7 @@ def lambda_handler(event: Any, context: Any):
                   f"every midnight UTC. You can monitor the spending at the dashboard " +
                   "https://xgboost-ci.net/dashboard/.")
         logger.info(reason)
+        turn_off_ec2_provision()
         return {
             'approved' : False,
             'reason': reason
@@ -233,6 +255,7 @@ def lambda_handler(event: Any, context: Any):
         reason = (f"Today's spending ({today_cost:.2f} USD) is within the budget " +
                   f"({daily_budget:.2f} USD) allocated for today.")
         logger.info(reason)
+        turn_on_ec2_provision()
         return {
             'approved' : True,
             'reason': reason
