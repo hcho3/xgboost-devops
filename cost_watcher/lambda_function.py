@@ -4,9 +4,10 @@ import json
 import re
 import math
 from typing import Any, Dict, Tuple, Union
+import configparser
 
 import boto3
-import configparser
+from botocore.config import Config as BotoConfig
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
@@ -21,6 +22,8 @@ logger.setLevel(logging.DEBUG)
 
 ec2_resource = boto3.resource('ec2', region_name='us-west-2')
 iam_resource = boto3.resource('iam', region_name='us-west-2')
+ct_client = boto3.client('cloudtrail', region_name='us-west-2',
+                         config = BotoConfig(retries={'max_attempts': 10, 'mode': 'standard'}))
 
 config = configparser.ConfigParser()
 config.read('./metadata.ini')
@@ -53,8 +56,6 @@ def get_os_of_ami(image_id: str) -> str:
     return platform_details
 
 def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
-    ct_client = boto3.client('cloudtrail', region_name='us-west-2')
-
     current_time = datetime.datetime.now(datetime.timezone.utc)
 
     paginator = ct_client.get_paginator('lookup_events')
@@ -95,12 +96,12 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
                     or (not event_detail['responseElements'])
                     or ('instancesSet' not in event_detail['responseElements'])
                     or (not event_detail['responseElements']['instancesSet'])):
-                logger.debug('Skipping RunInstances event at %s because it did not succeed.',
-                             event_time)
+                # RunInstance that did not succeed
                 continue
             for ec2 in event_detail['responseElements']['instancesSet']['items']:
                 ec2_id = ec2['instanceId']
                 if ec2_id not in ec2_run_record:
+                    # This instance is currently active; will count it in get_active_ec2_instances()
                     continue
                 ec2_run_record[ec2_id]['start'] = event_time
                 ec2_run_record[ec2_id]['type'] = ec2['instanceType']
