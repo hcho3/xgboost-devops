@@ -36,12 +36,14 @@ $prev_timestamp = null;
 foreach($data as $datapoint) {
   $timestamp[] = $datapoint['Timestamp'];
   if (!empty($prev_timestamp) && get_date($prev_timestamp) != get_date($datapoint['Timestamp'])) {
-    $prefix_max = $datapoint['Maximum'];
+    $prefix_max = 0;
+    $expense[] =  $datapoint['Maximum'];
   } else {
     $prefix_max = max($prefix_max, $datapoint['Maximum']);
+    $expense[] = $prefix_max;
   }
   $prev_timestamp = $datapoint['Timestamp'];
-  $expense[] = $prefix_max;
+
 }
 ?>
 <html>
