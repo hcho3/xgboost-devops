@@ -17,10 +17,12 @@ jobs:
     - name: Install Python packages
       run: |
         python -m pip install boto3
-    - name: Deploy code package to AWS Lambda
+    - name: Deploy to AWS Lambda
       run: |
         python deploy_scripts/deploy_lambda.py \
           --lambda-function=XGBoostCICostWatcher --code-dir=cost_watcher
+        python deploy_scripts/deploy_lambda.py \
+          --lambda-function=XGBoostCIS3Monitor --code-dir=s3_monitor
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
