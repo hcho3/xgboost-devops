@@ -1,21 +1,30 @@
 <?php
-$metadata = parse_ini_file('./metadata.ini');
-
 require '/var/www/aws/aws-autoloader.php';
+
 use Aws\CloudWatch\CloudWatchClient;
 
 $client = new CloudWatchClient([
-  'region'  => 'us-west-2',
-  'version' => 'latest'
+    'region' => 'us-west-2',
+    'version' => 'latest'
 ]);
 
-$result = $client->getMetricStatistics(array(
-  'Namespace'  => 'XGBoostCICostWatcher',
-  'MetricName' => 'TodayEC2SpendingUSD',
-  'StartTime'  => strtotime('-48 hours'),
-  'EndTime'    => strtotime('now'),
-  'Period'     => 120,
-  'Statistics' => array('Maximum')
+$start_time = strtotime('-48 hours');
+$end_time = strtotime('now');
+$expense_metric = $client->getMetricStatistics(array(
+    'Namespace' => 'XGBoostCICostWatcher',
+    'MetricName' => 'TodayEC2SpendingUSD',
+    'StartTime' => $start_time,
+    'EndTime' => $end_time,
+    'Period' => 120,
+    'Statistics' => array('Maximum')
+));
+$budget_metric = $client->getMetricStatistics(array(
+    'Namespace' => 'XGBoostCICostWatcher',
+    'MetricName' => 'DailyBudgetUSD',
+    'StartTime' => $start_time,
+    'EndTime' => $end_time,
+    'Period' => 120,
+    'Statistics' => array('Maximum')
 ));
 
 $message = '';
@@ -24,26 +33,34 @@ function get_date($timestamp) {
   return explode('T', $timestamp)[0];
 }
 
-$data = $result['Datapoints'];
-usort($data, function($a, $b) {
-    if($a['Timestamp'] == $b['Timestamp']) {
-        return 0;
-    }
-    return ($a['Timestamp'] < $b['Timestamp']) ? -1 : 1;
-});
+function sort_by_timestamp($a, $b) {
+  if ($a['Timestamp'] == $b['Timestamp']) {
+    return 0;
+  }
+  return ($a['Timestamp'] < $b['Timestamp']) ? -1 : 1;
+}
+
+$expense_data = $expense_metric['Datapoints'];
+usort($expense_data, "sort_by_timestamp");
 $prefix_max = 0;
 $prev_timestamp = null;
-foreach($data as $datapoint) {
-  $timestamp[] = $datapoint['Timestamp'];
+foreach ($expense_data as $datapoint) {
+  $expense_timestamp[] = $datapoint['Timestamp'];
   if (!empty($prev_timestamp) && get_date($prev_timestamp) != get_date($datapoint['Timestamp'])) {
     $prefix_max = 0;
-    $expense[] =  $datapoint['Maximum'];
+    $expense_value[] = $datapoint['Maximum'];
   } else {
     $prefix_max = max($prefix_max, $datapoint['Maximum']);
-    $expense[] = $prefix_max;
+    $expense_value[] = $prefix_max;
   }
   $prev_timestamp = $datapoint['Timestamp'];
+}
 
+$budget_data = $budget_metric['Datapoints'];
+usort($budget_data, "sort_by_timestamp");
+foreach ($budget_data as $datapoint) {
+  $budget_timestamp[] = $datapoint['Timestamp'];
+  $budget_value[] = $datapoint['Maximum'];
 }
 ?>
 <html>
@@ -102,16 +119,14 @@ setInterval(displayCountdown, 1000);
 <script type="text/javascript">
 let data = [
   {
-    x: <?php echo("[\"" . implode("\",\"", $timestamp) . "\"]"); ?>,
-    y: <?php echo("[" . implode(",", $expense) . "]"); ?>,
+    x: <?php echo("[\"" . implode("\",\"", $expense_timestamp) . "\"]"); ?>,
+    y: <?php echo("[" . implode(",", $expense_value) . "]"); ?>,
     type: 'scatter',
     name: 'TodayEC2SpendingUSD'
   },
   {
-    x: <?php echo("[\"" . implode("\",\"", $timestamp) . "\"]"); ?>,
-    y: <?php
-      echo("[" . implode(",", array_fill(0, count($timestamp), $metadata['daily_budget'])) . "]");
-    ?>,
+    x: <?php echo("[\"" . implode("\",\"", $budget_timestamp) . "\"]"); ?>,
+    y: <?php echo("[" . implode(",", $budget_value) . "]"); ?>,
     type: 'scatter',
     name: 'DailyBudget'
   }
