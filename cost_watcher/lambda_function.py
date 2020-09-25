@@ -3,6 +3,7 @@ import datetime
 import json
 import re
 import math
+import time
 from typing import Any, Dict, Tuple, Union
 import configparser
 
@@ -79,6 +80,7 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
             for ec2 in event_detail['responseElements']['instancesSet']['items']:
                 ec2_id = ec2['instanceId']
                 ec2_run_record[ec2_id] = {'end': event_time}
+        time.sleep(1)
 
     page_iter = paginator.paginate(
         LookupAttributes=[
@@ -106,6 +108,7 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
                 ec2_run_record[ec2_id]['start'] = event_time
                 ec2_run_record[ec2_id]['type'] = ec2['instanceType']
                 ec2_run_record[ec2_id]['os'] = get_os_of_ami(ec2['imageId'])
+        time.sleep(1)
     return ec2_run_record
 
 def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
