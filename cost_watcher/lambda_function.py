@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 ec2_resource = boto3.resource('ec2', region_name='us-west-2')
 iam_resource = boto3.resource('iam', region_name='us-west-2')
 ct_client = boto3.client('cloudtrail', region_name='us-west-2',
-                         config = BotoConfig(retries={'max_attempts': 1, 'mode': 'standard'}))
+                         config = BotoConfig(retries={'max_attempts': 3, 'mode': 'standard'}))
 
 config = configparser.ConfigParser()
 config.read('./metadata.ini')
