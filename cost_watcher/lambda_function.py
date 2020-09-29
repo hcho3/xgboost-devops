@@ -77,9 +77,10 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
             assert event['EventName'] == 'TerminateInstances'
             event_time = event['EventTime']
             event_detail = json.loads(event['CloudTrailEvent'])
-            for ec2 in event_detail['responseElements']['instancesSet']['items']:
-                ec2_id = ec2['instanceId']
-                ec2_run_record[ec2_id] = {'end': event_time}
+            if event_detail['responseElements']:  # Event did not go through due to dry run
+                for ec2 in event_detail['responseElements']['instancesSet']['items']:
+                    ec2_id = ec2['instanceId']
+                    ec2_run_record[ec2_id] = {'end': event_time}
         time.sleep(0.5)
 
     page_iter = paginator.paginate(
