@@ -5,6 +5,9 @@ DevOps / Continuous Integration tools for XGBoost project
 [![Deploy lambda](https://github.com/hcho3/xgboost-devops/workflows/Deploy%20lambda/badge.svg?branch=mainline)](https://github.com/hcho3/xgboost-devops/actions?query=workflow%3A%22Deploy+lambda%22)
 Lambda function to watch today's EC2 expense and enforce the daily budget.
 
+## EC2 Monitor
+Lambda function to monitor creation and destruction of EC2 instances. The function writes to the DynamoDB table named `XGBoostCIWorkerProvisionRecord`.
+
 ## S3 Monitor
 Lambda function to monitor outbound traffic on S3 buckets.
 

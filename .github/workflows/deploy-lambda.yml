@@ -23,6 +23,8 @@ jobs:
           --lambda-function=XGBoostCICostWatcher --code-dir=cost_watcher
         python deploy_scripts/deploy_lambda.py \
           --lambda-function=XGBoostCIS3Monitor --code-dir=s3_monitor
+        python deploy_scripts/deploy_lambda.py \
+          --lambda-function=XGBoostCIEC2Monitor --code-dir=ec2_monitor
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

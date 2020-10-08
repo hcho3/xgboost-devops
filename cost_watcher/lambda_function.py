@@ -8,7 +8,7 @@ from typing import Any, Dict, Tuple, Union
 import configparser
 
 import boto3
-from botocore.config import Config as BotoConfig
+from boto3.dynamodb.conditions import Key
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
@@ -23,8 +23,8 @@ logger.setLevel(logging.DEBUG)
 
 ec2_resource = boto3.resource('ec2', region_name='us-west-2')
 iam_resource = boto3.resource('iam', region_name='us-west-2')
-ct_client = boto3.client('cloudtrail', region_name='us-west-2',
-                         config = BotoConfig(retries={'max_attempts': 3, 'mode': 'standard'}))
+provision_record_table = boto3.resource('dynamodb', region_name='us-west-2')\
+                              .Table('XGBoostCIWorkerProvisionRecord')
 
 config = configparser.ConfigParser()
 config.read('./metadata.ini')
@@ -58,59 +58,46 @@ def get_os_of_ami(image_id: str) -> str:
 
 def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
     current_time = datetime.datetime.now(datetime.timezone.utc)
+    current_time_minus_day = current_time - datetime.timedelta(days=1)
 
-    paginator = ct_client.get_paginator('lookup_events')
-    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + datetime.timedelta(days=1)
+    today = current_time.date()
+    yesterday = current_time_minus_day.date()
 
-    ec2_run_record = {}
+    # Query the table 'XGBoostCIWorkerProvisionRecord' with today and yesterday's dates
+    # We want to take account of instances that were launched yesterday and are still
+    # running today.
+    records = []
+    for date in [yesterday, today]:
+        num_record = 0
+        key_expr = Key('Date').eq(date.isoformat())
+        kwargs = {'KeyConditionExpression': key_expr}
+        r = provision_record_table.query(**kwargs)
+        records.extend(r['Items'])
+        num_record += len(r['Items'])
+        while 'LastEvaluatedKey' in r:
+            kwargs['ExclusiveStartKey'] = r['LastEvaluatedKey']
+            r = provision_record_table.query(**kwargs)
+            records.extend(r['Items'])
+            num_record += len(r['Items'])
+        logger.info('Query yielded %d records in date %s', num_record, date)
 
-    page_iter = paginator.paginate(
-        LookupAttributes=[
-            {'AttributeKey': 'EventName', 'AttributeValue': 'TerminateInstances'}
-        ],
-        StartTime=today_start,
-        EndTime=today_end
-    )
-    for page in page_iter:
-        for event in page['Events']:
-            assert event['EventName'] == 'TerminateInstances'
-            event_time = event['EventTime']
-            event_detail = json.loads(event['CloudTrailEvent'])
-            if event_detail['responseElements']:  # Event did not go through due to dry run
-                for ec2 in event_detail['responseElements']['instancesSet']['items']:
-                    ec2_id = ec2['instanceId']
-                    ec2_run_record[ec2_id] = {'end': event_time}
-        time.sleep(0.5)
+    ec2_run_records = {}
 
-    page_iter = paginator.paginate(
-        LookupAttributes=[
-            {'AttributeKey': 'EventName', 'AttributeValue': 'RunInstances'}
-        ],
-        StartTime=today_start - datetime.timedelta(days=1),
-        EndTime=today_end
-    )
-    for page in page_iter:
-        for event in page['Events']:
-            assert event['EventName'] == 'RunInstances'
-            event_time = event['EventTime']
-            event_detail = json.loads(event['CloudTrailEvent'])
-            if (('responseElements' not in event_detail)
-                    or (not event_detail['responseElements'])
-                    or ('instancesSet' not in event_detail['responseElements'])
-                    or (not event_detail['responseElements']['instancesSet'])):
-                # RunInstance that did not succeed
-                continue
-            for ec2 in event_detail['responseElements']['instancesSet']['items']:
-                ec2_id = ec2['instanceId']
-                if ec2_id not in ec2_run_record:
-                    # This instance is currently active; will count it in get_active_ec2_instances()
-                    continue
-                ec2_run_record[ec2_id]['start'] = event_time
-                ec2_run_record[ec2_id]['type'] = ec2['instanceType']
-                ec2_run_record[ec2_id]['os'] = get_os_of_ami(ec2['imageId'])
-        time.sleep(0.5)
-    return ec2_run_record
+    for record in records:
+        ec2_id = record['InstanceID']
+        timestamp = record['Timestamp'].rsplit(sep='Z', maxsplit=1)[0] + '+00:00'
+        event_time = datetime.datetime.fromisoformat(timestamp)
+        if ec2_id not in ec2_run_records:
+            ec2_run_records[ec2_id] = {}
+        if record['EventName'] == 'RunInstances':
+            ec2_run_records[ec2_id]['start'] = event_time
+            ec2_run_records[ec2_id]['type'] = record['InstanceType']
+            ec2_run_records[ec2_id]['os'] = record['InstanceOS']
+        else:
+            assert record['EventName'] == 'TerminateInstances', f'Schema violated: {record}'
+            ec2_run_records[ec2_id]['end'] = event_time
+
+    return ec2_run_records
 
 def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, str]]]:
     ec2 = boto3.resource('ec2', region_name='us-west-2')
@@ -189,6 +176,9 @@ def lambda_handler(event: Any, context: Any):
     logger.debug('cost_table: %s', cost_table)
     today_cost = 0
 
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+
     def estimate_cost(record: Dict[str, Union[datetime.datetime, str]]) -> float:
         duration = record['end'] - record['start']
         num_second = math.ceil(duration.total_seconds())
@@ -201,13 +191,22 @@ def lambda_handler(event: Any, context: Any):
         return num_hour * cost_table[('Windows', record['type'])]
 
     for ec2_id, record in get_today_ec2_usage_record().items():
-        assert 'end' in record
+        if 'end' not in record:
+            # This instance is currently active; will count it in get_active_ec2_instances()
+            logger.info('Instance %s was launched at %s but was not yet terminated.',
+                        ec2_id, record['start'].isoformat())
+            continue
         if 'start' not in record:
             # There is up to 15 minute delay between API invocation and when CloudTrail records it
             # In a rare case, CloudTrail could have a record for terminating an instance but not
             # yet for starting it. Ignore this record for the purpose of estimating the daily cost.
             logger.info('CloudTrail has record for terminating instance %s (%s) but not for ' +
                         'starting it. Ignoring it for now.', ec2_id, record['end'].isoformat())
+            continue
+        if record['end'] < today_start:
+            # This instance was launched yesterday and also terminated yesterday.
+            # So do not count it as part of today's cost.
+            logger.info('Instance %s was terminated yesterday, skipping', ec2_id)
             continue
         duration = record['end'] - record['start']
         cost = estimate_cost(record)
