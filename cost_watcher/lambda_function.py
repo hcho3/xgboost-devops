@@ -85,7 +85,8 @@ def get_today_ec2_usage_record() -> Dict[str, Dict[str, Union[datetime.datetime,
 
     for record in records:
         ec2_id = record['InstanceID']
-        timestamp = record['Timestamp'].rsplit(sep='Z', maxsplit=1)[0] + '+00:00'
+        timestamp, ordinal = record['Timestamp-Ordinal'].split(sep='#', maxsplit=1)
+        timestamp = timestamp.rsplit(sep='Z', maxsplit=1)[0] + '+00:00'
         event_time = datetime.datetime.fromisoformat(timestamp)
         if ec2_id not in ec2_run_records:
             ec2_run_records[ec2_id] = {}

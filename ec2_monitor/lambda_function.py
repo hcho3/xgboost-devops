@@ -49,14 +49,14 @@ def lambda_handler(event: Any, context: Any):
                     or ('items' not in message['responseElements']['instancesSet'])):
                 # RunInstance that did not succeed
                 continue
-            for ec2 in message['responseElements']['instancesSet']['items']:
+            for ordinal, ec2 in enumerate(message['responseElements']['instancesSet']['items']):
                 ec2_id = ec2['instanceId']
                 ec2_type = ec2['instanceType']
                 ec2_os = get_os_of_ami(ec2['imageId'])
                 logger.info(f'RunInstances, InstanceID = {ec2_id} @ {event_time}')
                 table.put_item(Item={
                     'Date': event_time.split(sep='T', maxsplit=1)[0],
-                    'Timestamp': event_time,
+                    'Timestamp-Ordinal': f'{event_time}#{ordinal}',
                     'EventName': 'RunInstances',
                     'InstanceID': ec2_id,
                     'InstanceType': ec2_type,
@@ -69,11 +69,11 @@ def lambda_handler(event: Any, context: Any):
                     or ('items' not in message['responseElements']['instancesSet'])):
                 # TerminateInstances that did not succeed
                 continue
-            for ec2 in message['responseElements']['instancesSet']['items']:
+            for ordinal, ec2 in enumerate(message['responseElements']['instancesSet']['items']):
                 ec2_id = ec2['instanceId']
                 logger.info(f'TerminateInstances, InstanceID = {ec2_id}  @ {event_time}')
                 table.put_item(Item={
                     'Date': event_time.split(sep='T', maxsplit=1)[0],
-                    'Timestamp': event_time,
+                    'Timestamp-Ordinal': f'{event_time}#{ordinal}',
                     'EventName': 'TerminateInstances',
                     'InstanceID': ec2_id})
