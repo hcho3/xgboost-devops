@@ -9,6 +9,7 @@ import configparser
 
 import boto3
 from boto3.dynamodb.conditions import Key
+from botocore.config import Config
 
 recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
@@ -23,7 +24,9 @@ logger.setLevel(logging.DEBUG)
 
 ec2_resource = boto3.resource('ec2', region_name='us-west-2')
 iam_resource = boto3.resource('iam', region_name='us-west-2')
-provision_record_table = boto3.resource('dynamodb', region_name='us-west-2')\
+dynamodb_config = Config(connect_timeout=5, read_timeout=5, retries={'max_attempts': 3})
+provision_record_table = boto3.resource('dynamodb', region_name='us-west-2',
+                                        config=dynamodb_config)\
                               .Table('XGBoostCIWorkerProvisionRecord')
 
 config = configparser.ConfigParser()
