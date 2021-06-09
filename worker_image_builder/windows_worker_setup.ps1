@@ -85,3 +85,8 @@ Write-Host '>>> Installing Python packages...'
 conda activate
 conda install -y numpy scipy matplotlib scikit-learn pandas pytest python-graphviz boto3 awscli `
     hypothesis jsonschema
+
+# Install R
+Write-Host '>>> Installing R...'
+choco install r.project --version=3.6.3
+choco install rtools --version=3.5.0.4
