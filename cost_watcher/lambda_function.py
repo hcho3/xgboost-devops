@@ -15,7 +15,7 @@ recognized_os_types = ['Linux', 'Windows']
 recognized_instance_types = [
     'c5a.4xlarge', 'c5.4xlarge', 'g4dn.xlarge', 'g4dn.12xlarge', 'p2.xlarge', 'c5.large',
     't3a.large', 't3a.micro', 'g4dn.2xlarge', 'c6g.4xlarge', 'g4dn.8xlarge', 'g4dn.4xlarge',
-    'p4d.24xlarge'
+    'p4d.24xlarge', 'g4ad.xlarge'
 ]
 no_launch_policy_arn = 'arn:aws:iam::492475357299:policy/EC2AccessNoRunInstances'
 
