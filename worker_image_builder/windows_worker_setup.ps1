@@ -84,7 +84,7 @@ choco install cuda --version 11.0.3
 Write-Host '>>> Installing Python packages...'
 conda activate
 conda install -y numpy scipy matplotlib scikit-learn pandas pytest python-graphviz boto3 awscli `
-    hypothesis jsonschema
+    hypothesis jsonschema mamba
 
 # Install R
 Write-Host '>>> Installing R...'
