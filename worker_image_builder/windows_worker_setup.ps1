@@ -76,9 +76,9 @@ choco install visualstudio2017community --version 15.9.23.0 --params "--wait --p
 choco install visualstudio2017-workload-nativedesktop --params `
     "--wait --passive --norestart --includeOptional"
 
-# Install CUDA 10.1
-Write-Host '>>> Installing CUDA 10.1...'
-choco install cuda --version 10.1.243
+# Install CUDA 11.0
+Write-Host '>>> Installing CUDA 11.0...'
+choco install cuda --version 11.0.3
 
 # Install Python packages
 Write-Host '>>> Installing Python packages...'
