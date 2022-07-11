@@ -66,7 +66,7 @@ conda config --prepend channels conda-forge
 
 # Install Java SE Runtime 11
 Write-Host '>>> Installing Java 11...'
-choco install jre11 -params "static=false"
+choco install jdk11 -params "static=false"
 
 # Install GraphViz
 Write-Host '>>> Installing GraphViz...'
