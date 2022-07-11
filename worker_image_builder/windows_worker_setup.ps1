@@ -62,9 +62,9 @@ C:\tools\miniconda3\Scripts\conda.exe init
 conda config --set auto_activate_base false
 conda config --prepend channels conda-forge
 
-# Install Java SE Runtime 8
-Write-Host '>>> Installing Java 8...'
-choco install jre8 -PackageParameters "/exclude:32"
+# Install Java SE Runtime 11
+Write-Host '>>> Installing Java 11...'
+choco install jre11 -params "static=false"
 
 # Install GraphViz
 Write-Host '>>> Installing GraphViz...'
