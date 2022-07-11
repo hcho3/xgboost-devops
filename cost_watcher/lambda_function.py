@@ -187,13 +187,10 @@ def lambda_handler(event: Any, context: Any):
     def estimate_cost(record: Dict[str, Union[datetime.datetime, str]]) -> float:
         duration = record['end'] - record['start']
         num_second = math.ceil(duration.total_seconds())
-        if record['os'] == 'Linux':
-            # Linux instances use per-second billing, with a minimum commitment of 60 seconds
-            return max(num_second, 60) * cost_table[('Linux', record['type'])] / 3600
-        assert record['os'] == 'Windows'
-        # Windows instances use per-hour billing, with the usage time rounded up to the next hour.
-        num_hour = math.ceil(num_second / 3600)
-        return num_hour * cost_table[('Windows', record['type'])]
+        if record['os'] in ['Linux', 'Windows']:
+            # Use per-second billing, with a minimum commitment of 60 seconds
+            return max(num_second, 60) * cost_table[(record['os'], record['type'])] / 3600
+        raise ValueError(f"Unrecognized OS: {record['os']}")
 
     for ec2_id, record in get_today_ec2_usage_record().items():
         if 'end' not in record:
