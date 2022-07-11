@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Stop"
+
 # Install Chocolatey
 Write-Host '>>> Installing Chocolatey...'
 Set-ExecutionPolicy Bypass -Scope Process -Force
