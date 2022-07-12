@@ -1,5 +1,8 @@
 $ErrorActionPreference = "Stop"
 
+# Create temp dir
+New-Item C:\\Users\\Administrator\\Temp\\ -ItemType Directory -ea 0
+
 # Install Chocolatey
 Write-Host '>>> Installing Chocolatey...'
 Set-ExecutionPolicy Bypass -Scope Process -Force
