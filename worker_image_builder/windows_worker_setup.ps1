@@ -25,14 +25,14 @@ choco install openssh
 New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH SSH Server' -Enabled True -Direction Inbound `
     -Protocol TCP -Action Allow -LocalPort 22 -Program "C:\Program Files\OpenSSH-Win64\sshd.exe"
 . "C:\Program Files\OpenSSH-Win64\install-sshd.ps1"
-mkdir $Env:UserProfile\.ssh
+mkdir C:\Users\Administrator\.ssh
 $PublicKey =
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDlEj0qPxTBHPxc9EB96jhdUb8z/oylNkItHpn1d87acm4E8E52DbI/" +
     "P24kUm02ZE4pNjF5GAU5wyL2/AU86NjvvQ47xTMJ0rFF+0yZuVbHqMgu/YbUlnMVxikynAyA1XAmGgssDkPUYN6jNbZ1" +
     "ug8Y+CblurWBZ4yQjHaoClOvUzwdw9RuB3A8umdRJyT7jKSq+wV05xo6BX0BDCoAedBBH9wF6FDNRWNUfzGK0FxiDtVp" +
     "55vfxFUPFcGB+lbualdiqgHvo+BBAAssgEExW7pG/2Kurp8xL+cha8ksEeZu79PqGvqz5Qbx4WHuVchdBTF6N7erV1My" +
     "3KMUmG1YzykB"
-$AuthorizedKeysFile = "$Env:UserProfile\.ssh\authorized_keys"
+$AuthorizedKeysFile = "C:\Users\Administrator\.ssh\authorized_keys"
 Set-Content -Path $AuthorizedKeysFile -Value $PublicKey
 Import-Module "$env:PROGRAMFILES\OpenSSH-Win64\OpenSSHUtils.psd1" -Force
 Repair-AuthorizedKeyPermission -FilePath $AuthorizedKeysFile
