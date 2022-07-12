@@ -63,7 +63,7 @@ if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Miniconda
 Write-Host '>>> Installing Miniconda...'
-choco install miniconda3 /RegisterPython:1 /D:C:\tools\miniconda3
+choco install miniconda3 /RegisterPython:1
 if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 C:\tools\miniconda3\Scripts\conda.exe init --user --system
 if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
