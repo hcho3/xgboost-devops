@@ -14,6 +14,7 @@ choco feature enable -n=allowGlobalConfirmation
 # Git 2.27
 Write-Host '>>> Installing Git 2.27...'
 choco install git.install -params "'/GitAndUnixToolsOnPath'"
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Reload path
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") +
@@ -22,6 +23,7 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") +
 # Install OpenSSH and set up public-key auth
 Write-Host '>>> Installing OpenSSH for Windows...'
 choco install openssh
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH SSH Server' -Enabled True -Direction Inbound `
     -Protocol TCP -Action Allow -LocalPort 22 -Program "C:\Program Files\OpenSSH-Win64\sshd.exe"
 . "C:\Program Files\OpenSSH-Win64\install-sshd.ps1"
@@ -43,6 +45,7 @@ Restart-Service SSH-Agent
 sed -i -e 's/^Match Group administrators$//g' `
        -e 's/AuthorizedKeysFile __PROGRAMDATA__\/ssh\/administrators_authorized_keys$//g' `
           C:\ProgramData\ssh\sshd_config
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 Set-Service SSHD -StartupType Automatic
 Set-Service SSH-Agent -StartupType Automatic
 Restart-Service SSHD
@@ -51,44 +54,57 @@ Restart-Service SSH-Agent
 # CMake 3.18
 Write-Host '>>> Installing CMake 3.18...'
 choco install cmake --version 3.18.0 --installargs "ADD_CMAKE_TO_PATH=System"
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Notepad++
 Write-Host '>>> Installing Notepad++...'
 choco install notepadplusplus
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Miniconda
 Write-Host '>>> Installing Miniconda...'
 choco install miniconda3 /RegisterPython:1 /D=C:\tools\miniconda3
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 C:\tools\miniconda3\Scripts\conda.exe init --user --system
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 . "C:\Program Files\PowerShell\7\profile.ps1"
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 conda config --set auto_activate_base false
 conda config --prepend channels conda-forge
 
 # Install Java SE Runtime 11
 Write-Host '>>> Installing Java 11...'
 choco install jdk11 -params "static=false"
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Install GraphViz
 Write-Host '>>> Installing GraphViz...'
 choco install graphviz
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Install Visual Studio Community 2017 (15.9)
 Write-Host '>>> Installing Visual Studio 2017 Community (15.9)...'
 choco install visualstudio2017community --version 15.9.23.0 --params "--wait --passive --norestart"
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 choco install visualstudio2017-workload-nativedesktop --params `
     "--wait --passive --norestart --includeOptional"
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Install CUDA 11.0
 Write-Host '>>> Installing CUDA 11.0...'
 choco install cuda --version 11.0.3
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Install Python packages
 Write-Host '>>> Installing Python packages...'
 conda activate
 conda install -y numpy scipy matplotlib scikit-learn pandas pytest python-graphviz boto3 awscli `
     hypothesis jsonschema mamba
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Install R
 Write-Host '>>> Installing R...'
 choco install r.project --version=3.6.3
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 choco install rtools --version=3.5.0.4
+if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
