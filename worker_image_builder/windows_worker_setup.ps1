@@ -60,7 +60,7 @@ choco install notepadplusplus
 Write-Host '>>> Installing Miniconda...'
 choco install miniconda3 /RegisterPython:1 /D=C:\tools\miniconda3
 C:\tools\miniconda3\Scripts\conda.exe init --user --system
-. C:\Program Files\PowerShell\7\profile.ps1
+. "C:\Program Files\PowerShell\7\profile.ps1"
 conda config --set auto_activate_base false
 conda config --prepend channels conda-forge
 
