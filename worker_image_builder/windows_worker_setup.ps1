@@ -72,9 +72,9 @@ if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 conda config --set auto_activate_base false
 conda config --prepend channels conda-forge
 
-# Install Java SE Runtime 11
+# Install Java 11
 Write-Host '>>> Installing Java 11...'
-choco install jdk11 -params "static=false"
+choco install openjdk11jre
 if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 
 # Install GraphViz
