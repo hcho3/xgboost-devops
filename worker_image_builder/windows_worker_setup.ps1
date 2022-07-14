@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 # Set *temporary* password for the Administrator user
-Set-LocalUser -Name "Administrator" -AccountNeverExpires -Password WPUavEUmPhZpR4288GCQ7MeA
+Set-LocalUser -Name "Administrator" -AccountNeverExpires -Password "WPUavEUmPhZpR4288GCQ7MeA"
 
 # Configure EC2 launch setting. Ensure that password gets reset to random in next boot
 $EC2LaunchSetting = "{`"adminPasswordType`": `"Random`"}"
