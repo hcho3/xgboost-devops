@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 Set-LocalUser -Name "Administrator" -AccountNeverExpires -Password WPUavEUmPhZpR4288GCQ7MeA
 
 # Configure EC2 launch setting. Ensure that password gets reset to random in next boot
-$EC2LaunchSetting = @"{"adminPasswordType": "Random"}"@
+$EC2LaunchSetting = "{`"adminPasswordType`": `"Random`"}"
 $EC2LaunchConfigFile = "C:\ProgramData\Amazon\EC2-Windows\Launch\Config\LaunchConfig.json"
 Set-Content -Path $EC2LaunchConfigFile -Value $EC2LaunchSetting
 C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -SchedulePerBoot
