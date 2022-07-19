@@ -107,13 +107,3 @@ choco install r.project --version=3.6.3
 if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
 choco install rtools --version=3.5.0.4
 if ($LASTEXITCODE -ne 0) { throw "Last command failed" }
-
-# Set *temporary* password for the Administrator user
-$SecurePassword = ConvertTo-SecureString "WPUavEUmPhZpR4288GCQ7MeA" -AsPlainText -Force
-Set-LocalUser -Name "Administrator" -AccountNeverExpires -Password $SecurePassword
-
-# Configure EC2 launch setting. Ensure that password gets reset to random in next boot
-$EC2LaunchSetting = "{`"adminPasswordType`": `"Random`"}"
-$EC2LaunchConfigFile = "C:\ProgramData\Amazon\EC2-Windows\Launch\Config\LaunchConfig.json"
-Set-Content -Path $EC2LaunchConfigFile -Value $EC2LaunchSetting
-C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -SchedulePerBoot
