@@ -123,7 +123,7 @@ def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, s
         tags = {x["Key"]: x["Value"] for x in instance.tags}
         if "Name" in tags:
             # Exclude the Jenkins manager instance
-            if tags["Name"] in ["Jenkins manager", "Jenkins Job Initializer"]:
+            if tags["Name"] in ["Jenkins manager", "Jenkins Job Initializer", "XGBoost CI Dashboard"]:
                 logger.info(
                     "instance %s: Jenkins manager detected; skipping",
                     instance.instance_id,
