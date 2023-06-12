@@ -3,11 +3,11 @@
 set -euo pipefail
 
 manager_id=$(python -m awscli ec2 describe-instances \
-  --filters Name=tag:Name,Values='Jenkins manager' \
+  --filters Name=tag:Name,Values='XGBoost CI Dashboard' \
   --query 'Reservations[*].Instances[*].{Instance:InstanceId}' \
   --output text --region us-west-2)
 manager_az=$(python -m awscli ec2 describe-instances \
-  --filters Name=tag:Name,Values='Jenkins manager' \
+  --filters Name=tag:Name,Values='XGBoost CI Dashboard' \
   --query 'Reservations[*].Instances[*].{AZ:Placement.AvailabilityZone}' \
   --output text --region us-west-2)
 

@@ -1,5 +1,5 @@
 <?php
-require '/var/www/aws/aws-autoloader.php';
+require '../../composer/vendor/autoload.php';
 
 use Aws\CloudWatch\CloudWatchClient;
 
