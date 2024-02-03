@@ -182,7 +182,7 @@ def get_ec2_pricing() -> Dict[Tuple[str, str], float]:
             assert product_attrs["capacitystatus"] == "Used"
             assert product_attrs["preInstalledSw"] == "NA"
             assert re.match(
-                r"^RunInstances(?::[0-9g]{4}){0,1}$", product_attrs["operation"]
+                r"^RunInstances(?::[0-9A-Za-z]{1,4}){0,1}$", product_attrs["operation"]
             )
             price_record = obj["terms"]["OnDemand"]
             id1 = list(price_record)[0]
