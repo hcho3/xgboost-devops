@@ -122,16 +122,16 @@ def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, s
         duration = current_time - launch_time
         tags = {x["Key"]: x["Value"] for x in instance.tags}
         if "Name" in tags:
-            # Exclude the Jenkins manager instance
-            if tags["Name"] in ["Jenkins manager", "Jenkins Job Initializer", "XGBoost CI Dashboard"]:
+            # Exclude the Dashboard website
+            if tags["Name"] in ["XGBoost CI Dashboard"]:
                 logger.info(
-                    "instance %s: Jenkins manager detected; skipping",
+                    "instance %s: Dashboard website detected; skipping",
                     instance.instance_id,
                 )
                 continue
             # Exclude the BuildKite pipeline loader
             if (
-                tags["Name"] == "buildkite-agent"
+                re.search(r"buildkite-pipeline-loader", tags["Name"])
                 and instance.instance_type == "t3a.micro"
             ):
                 logger.info(
