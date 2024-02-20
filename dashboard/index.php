@@ -43,17 +43,9 @@ function sort_by_timestamp($a, $b) {
 $expense_data = $expense_metric['Datapoints'];
 usort($expense_data, "sort_by_timestamp");
 $prefix_max = 0;
-$prev_timestamp = null;
 foreach ($expense_data as $datapoint) {
   $expense_timestamp[] = $datapoint['Timestamp'];
-  if (!empty($prev_timestamp) && get_date($prev_timestamp) != get_date($datapoint['Timestamp'])) {
-    $prefix_max = 0;
-    $expense_value[] = $datapoint['Maximum'];
-  } else {
-    $prefix_max = max($prefix_max, $datapoint['Maximum']);
-    $expense_value[] = $prefix_max;
-  }
-  $prev_timestamp = $datapoint['Timestamp'];
+  $expense_value[] = $datapoint['Maximum'];
 }
 
 $budget_data = $budget_metric['Datapoints'];
