@@ -41,6 +41,14 @@ def deploy_lambda(lambda_function, code_dir):
         )
     waiter = client.get_waiter("function_exists")
     waiter.wait(FunctionName=lambda_function)
+    if lambda_function == "XGBoostCICostWatcher":
+        client.add_permission(
+            FunctionName=lambda_function,
+            StatementId="EventBridge",
+            Action="lambda:InvokeFunction",
+            Principal="events.amazonaws.com",
+            SourceArn="arn:aws:events:us-west-2:492475357299:rule/XGBoostCICostWatcherInvoker",
+        )
     print(f"Finished deploying to Lambda function {lambda_function}.")
 
 
