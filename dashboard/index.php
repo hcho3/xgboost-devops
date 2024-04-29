@@ -15,7 +15,7 @@ $expense_metric = $client->getMetricStatistics(array(
     'MetricName' => 'TodayEC2SpendingUSD',
     'StartTime' => $start_time,
     'EndTime' => $end_time,
-    'Period' => 120,
+    'Period' => 60,
     'Statistics' => array('Maximum')
 ));
 $budget_metric = $client->getMetricStatistics(array(
@@ -23,7 +23,7 @@ $budget_metric = $client->getMetricStatistics(array(
     'MetricName' => 'DailyBudgetUSD',
     'StartTime' => $start_time,
     'EndTime' => $end_time,
-    'Period' => 120,
+    'Period' => 60,
     'Statistics' => array('Maximum')
 ));
 
