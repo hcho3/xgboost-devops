@@ -29,6 +29,7 @@ recognized_instance_types = [
     "g4ad.xlarge",
     "c5a.2xlarge",
     "c6g.medium",
+    "c5.2xlarge",
 ]
 no_launch_policy_arn = "arn:aws:iam::492475357299:policy/EC2AccessNoRunInstances"
 
