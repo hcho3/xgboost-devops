@@ -30,6 +30,7 @@ recognized_instance_types = [
     "c5a.2xlarge",
     "c6g.medium",
     "c5.2xlarge",
+    "m7i-flex.large",
 ]
 no_launch_policy_arn = "arn:aws:iam::492475357299:policy/EC2AccessNoRunInstances"
 
@@ -121,7 +122,9 @@ def get_active_ec2_instances() -> Dict[str, Dict[str, Union[datetime.datetime, s
     for instance in ec2_iter:
         launch_time = instance.launch_time.astimezone(tz=datetime.timezone.utc)
         duration = current_time - launch_time
-        tags = {x["Key"]: x["Value"] for x in instance.tags}
+        tags = (
+            {x["Key"]: x["Value"] for x in instance.tags} if instance.tags else dict()
+        )
         if "Name" in tags:
             # Exclude the Dashboard website
             if tags["Name"] in ["XGBoost CI Dashboard"]:
