@@ -29,7 +29,10 @@ recognized_instance_types = [
     "g4ad.xlarge",
     "c5a.2xlarge",
     "c6g.medium",
+    "c6g.8xlarge",
     "c5.2xlarge",
+    "c5a.8xlarge",
+    "c7i.8xlarge",
     "m7i-flex.large",
     "t3.xlarge",
 ]
