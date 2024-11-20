@@ -34,6 +34,7 @@ recognized_instance_types = [
     "c5.2xlarge",
     "c5a.8xlarge",
     "c5d.4xlarge",
+    "c7a.8xlarge",
     "c7gd.4xlarge",
     "c7i.8xlarge",
     "m7i-flex.large",
